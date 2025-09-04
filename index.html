@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Repeater Contact Log</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 1em;
+      line-height: 1.4;
+    }
+    h2, h3 {
+      margin-bottom: 0.4em;
+    }
+    form {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 10px;
+      max-width: 700px;
+      background: #f9f9f9;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    label {
+      font-weight: bold;
+      align-self: center;
+    }
+    textarea, input, button {
+      padding: 8px;
+      font-size: 1em;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    textarea {
+      resize: vertical;
+    }
+    button {
+      cursor: pointer;
+      background: #0073e6;
+      color: white;
+      border: none;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #005bb5;
+    }
+    #status {
+      margin-top: 15px;
+      font-weight: bold;
+    }
+    #map {
+      height: 300px;
+      margin-top: 15px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    #offlineControls {
+      margin-top: 20px;
+      padding: 10px;
+      background: #f1f1f1;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      form {
+        grid-template-columns: 1fr;
+      }
+      label {
+        margin-top: 5px;
+      }
+      button {
+        margin-top: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<h2>VHF/UHF Repeater Contact Report</h2>
+<h3>No ker-chunking please, we need 2 way communication</h3>
+
+<form id="contactForm">
+  <label for="initiator">Initiator Call Sign (Your Call):</label>
+  <input type="text" id="initiator" name="initiator" required>
+
+  <label for="latitude">Latitude (xx.xxxx):</label>
+  <input type="number" step="0.0001" id="latitude" name="latitude" required>
+
+  <label for="longitude">Longitude (yy.yyyy):</label>
+  <input type="number" step="0.0001" id="longitude" name="longitude" required>
+
+  <label></label>
+  <button type="button" onclick="getLocation()">📍 Use My Location</button>
+
+  <label for="frequency">Repeater Frequency (MHz):</label>
+  <input type="text" id="frequency" name="frequency" required>
+
+  <label for="radio">Radio Type (HT, Mobile, etc):</label>
+  <input type="text" id="radio" name="radio">
+
+  <label for="antenna">Antenna Type (Stock, Omni, Directional):</label>
+  <input type="text" id="antenna" name="antenna">
+
+  <label for="power">Power Level (W):</label>
+  <input type="number" id="power" name="power">
+
+  <label for="responder">Responder Call Sign (Who are you talking to?):</label>
+  <input type="text" id="responder" name="responder">
+
+  <label for="comments">Comments:</label>
+  <textarea id="comments" name="comments" rows="3"></textarea>
+
+  <label></label>
+  <button type="button" onclick="submitToSheet()">Submit Entry</button>
+</form>
+
+<div id="status"></div>
+<div id="map"></div>
+
+<div id="offlineControls">
+  <h4>Offline Tools</h4>
+  <button type="button" onclick="downloadOfflineCSV()">⬇️ Download Offline CSV</button>
+  <button type="button" onclick="syncOfflineEntries()">🔄 Sync Pending Entries</button>
+  <p id="offlineStatus"></p>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzGI5XAULA3Fiex-9VBavgG87RWd6TszNMSmHrh0JmPuTMpwMbh6yaQvFZaB8j0c6Xo/exec";
+  let offlineQueue = JSON.parse(localStorage.getItem("offlineQueue")) || [];
+
+  // Initialize map
+  let map = L.map('map').setView([40.0, -75.0], 6);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+  let marker = L.marker([40.0, -75.0]).addTo(map);
+
+  function updateMarker() {
+    const lat = parseFloat(document.getElementById("latitude").value);
+    const lon = parseFloat(document.getElementById("longitude").value);
+    if (!isNaN(lat) && !isNaN(lon)) {
+      marker.setLatLng([lat, lon]);
+      map.setView([lat, lon], 12);
+    }
+  }
+  document.getElementById("latitude").addEventListener("input", updateMarker);
+  document.getElementById("longitude").addEventListener("input", updateMarker);
+
+  function getLocation() {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(function(pos) {
+        const lat = pos.coords.latitude.toFixed(4);
+        const lon = pos.coords.longitude.toFixed(4);
+        document.getElementById("latitude").value = lat;
+        document.getElementById("longitude").value = lon;
+        updateMarker();
+      });
+    } else {
+      alert("Geolocation not supported by this browser.");
+    }
+  }
+
+  async function submitToSheet() {
+    const form = document.getElementById("contactForm");
+    const entry = {
+      initiator: form.initiator.value,
+      latitude: form.latitude.value,
+      longitude: form.longitude.value,
+      frequency: form.frequency.value,
+      radio: form.radio.value,
+      antenna: form.antenna.value,
+      power: form.power.value,
+      responder: form.responder.value,
+      comments: form.comments.value
+    };
+
+    try {
+      let response = await fetch(SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify(entry)
+      });
+      let result = await response.json();
+      document.getElementById("status").innerText =
+        "✅ Entry submitted successfully (Row " + result.row + ")";
+      form.reset();
+    } catch (err) {
+      // Offline fallback
+      offlineQueue.push(entry);
+      localStorage.setItem("offlineQueue", JSON.stringify(offlineQueue));
+      document.getElementById("status").innerText =
+        "⚠️ Offline: Entry saved locally. " + offlineQueue.length + " pending.";
+    }
+  }
+
+  function downloadOfflineCSV() {
+    if (offlineQueue.length === 0) {
+      alert("No offline entries to download.");
+      return;
+    }
+    let csv = "Initiator,Latitude,Longitude,Frequency,Radio,Antenna,Power,Responder,Comments\n";
+    offlineQueue.forEach(e => {
+      csv += `${e.initiator},${e.latitude},${e.longitude},${e.frequency},${e.radio},${e.antenna},${e.power},${e.responder},${e.comments}\n`;
+    });
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "offline_repeater_contacts.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function syncOfflineEntries() {
+    if (offlineQueue.length === 0) {
+      document.getElementById("offlineStatus").innerText = "No offline entries pending.";
+      return;
+    }
+    let success = 0;
+    let failed = [];
+    for (let i = 0; i < offlineQueue.length; i++) {
+      try {
+        let response = await fetch(SCRIPT_URL, {
+          method: "POST",
+          body: JSON.stringify(offlineQueue[i])
+        });
+        if (response.ok) success++;
+        else failed.push(offlineQueue[i]);
+      } catch (err) {
+        failed.push(offlineQueue[i]);
+      }
+    }
+    offlineQueue = failed;
+    localStorage.setItem("offlineQueue", JSON.stringify(offlineQueue));
+    document.getElementById("offlineStatus").innerText =
+      "✅ Synced " + success + " entries. " +
+      (offlineQueue.length > 0 ? offlineQueue.length + " still pending." : "All entries synced.");
+  }
+
+  // 🔄 Auto-sync when connection is restored
+  window.addEventListener("online", () => {
+    if (offlineQueue.length > 0) {
+      document.getElementById("offlineStatus").innerText =
+        "🌐 Connection restored, syncing " + offlineQueue.length + " entries...";
+      syncOfflineEntries();
+    }
+  });
+</script>
+
+</body>
+</html>
