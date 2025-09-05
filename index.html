@@ -29,7 +29,7 @@
       font-weight: bold;
       align-self: center;
     }
-    textarea, input, button {
+    textarea, input, button, select {
       padding: 8px;
       font-size: 1em;
       border: 1px solid #ccc;
@@ -112,10 +112,21 @@
   <label for="power">Power Level (W):</label>
   <input type="number" id="power" name="power">
 
-  <label for="responder">Responder Call Sign (Who are you talking to?):</label>
-  <input type="text" id="responder" name="responder">
+  <label>Contact Outcome:</label>
+  <div>
+    <label><input type="radio" name="outcome" value="success" checked> Successful</label>
+    <label><input type="radio" name="outcome" value="fail"> Unsuccessful</label>
+  </div>
 
-  <label for="comments">Comments:(is this a Repeater, Simplex, Other- Where was the party you were checking in with?)</label>
+  <div id="successFields">
+    <label for="responder">Responder Call Sign:</label>
+    <input type="text" id="responder" name="responder">
+
+    <label for="responderLocation">Responder Location:</label>
+    <input type="text" id="responderLocation" name="responderLocation">
+  </div>
+
+  <label for="comments">Comments:</label>
   <textarea id="comments" name="comments" rows="3"></textarea>
 
   <label></label>
@@ -136,7 +147,9 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzGI5XAULA3Fiex-9VBavgG87RWd6TszNMSmHrh0JmPuTMpwMbh6yaQvFZaB8j0c6Xo/exec";
+  const SUCCESS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxFOiEKH3sivhWSJf5gv65hAytMMhCNW2MfRa58o-TsClYSZ4IoPYbtaQ_WSAjCjQzx/exec";
+  const FAIL_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby0J6k0k0H0Ssfc57jRsKdNof2B9b2dgC89P6yhyvjWGhQmZcw3V3_rvrMPb87dsoNEuw/exec";
+
   let offlineQueue = JSON.parse(localStorage.getItem("offlineQueue")) || [];
 
   // Initialize map
@@ -171,8 +184,20 @@
     }
   }
 
+  // Toggle success fields visibility
+  document.querySelectorAll("input[name='outcome']").forEach(radio => {
+    radio.addEventListener("change", () => {
+      document.getElementById("successFields").style.display =
+        document.querySelector("input[name='outcome']:checked").value === "success" ? "contents" : "none";
+    });
+  });
+  // Initialize correct display
+  document.getElementById("successFields").style.display = "contents";
+
   async function submitToSheet() {
     const form = document.getElementById("contactForm");
+    const outcome = document.querySelector("input[name='outcome']:checked").value;
+
     const entry = {
       initiator: form.initiator.value,
       latitude: form.latitude.value,
@@ -181,12 +206,16 @@
       radio: form.radio.value,
       antenna: form.antenna.value,
       power: form.power.value,
-      responder: form.responder.value,
+      outcome: outcome,
+      responder: outcome === "success" ? form.responder.value : "",
+      responderLocation: outcome === "success" ? form.responderLocation.value : "",
       comments: form.comments.value
     };
 
+    const targetUrl = (outcome === "success") ? SUCCESS_SCRIPT_URL : FAIL_SCRIPT_URL;
+
     try {
-      let response = await fetch(SCRIPT_URL, {
+      let response = await fetch(targetUrl, {
         method: "POST",
         body: JSON.stringify(entry)
       });
@@ -194,6 +223,7 @@
       document.getElementById("status").innerText =
         "✅ Entry submitted successfully (Row " + result.row + ")";
       form.reset();
+      document.getElementById("successFields").style.display = "contents";
     } catch (err) {
       // Offline fallback
       offlineQueue.push(entry);
@@ -208,9 +238,9 @@
       alert("No offline entries to download.");
       return;
     }
-    let csv = "Initiator,Latitude,Longitude,Frequency,Radio,Antenna,Power,Responder,Comments\n";
+    let csv = "Initiator,Latitude,Longitude,Frequency,Radio,Antenna,Power,Outcome,Responder,ResponderLocation,Comments\n";
     offlineQueue.forEach(e => {
-      csv += `${e.initiator},${e.latitude},${e.longitude},${e.frequency},${e.radio},${e.antenna},${e.power},${e.responder},${e.comments}\n`;
+      csv += `${e.initiator},${e.latitude},${e.longitude},${e.frequency},${e.radio},${e.antenna},${e.power},${e.outcome},${e.responder},${e.responderLocation},${e.comments}\n`;
     });
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -229,8 +259,9 @@
     let success = 0;
     let failed = [];
     for (let i = 0; i < offlineQueue.length; i++) {
+      const targetUrl = (offlineQueue[i].outcome === "success") ? SUCCESS_SCRIPT_URL : FAIL_SCRIPT_URL;
       try {
-        let response = await fetch(SCRIPT_URL, {
+        let response = await fetch(targetUrl, {
           method: "POST",
           body: JSON.stringify(offlineQueue[i])
         });
