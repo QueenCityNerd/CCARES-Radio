@@ -152,14 +152,17 @@
 
   let offlineQueue = JSON.parse(localStorage.getItem("offlineQueue")) || [];
 
-  // Initialize map
-  let map = L.map('map').setView([40.0, -75.0], 6);
+    // Initialize map
+  let map = L.map('map').setView([42.1329, -76.7807], 10);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
   }).addTo(map);
-  let marker = L.marker([40.0, -75.0]).addTo(map);
 
-  function updateMarker() {
+  // Add draggable marker
+  let marker = L.marker([42.1329, -76.7807], { draggable: true }).addTo(map);
+
+  // Update marker position when lat/lon fields change
+  function updateMarkerFromInputs() {
     const lat = parseFloat(document.getElementById("latitude").value);
     const lon = parseFloat(document.getElementById("longitude").value);
     if (!isNaN(lat) && !isNaN(lon)) {
@@ -167,9 +170,17 @@
       map.setView([lat, lon], 12);
     }
   }
-  document.getElementById("latitude").addEventListener("input", updateMarker);
-  document.getElementById("longitude").addEventListener("input", updateMarker);
+  document.getElementById("latitude").addEventListener("input", updateMarkerFromInputs);
+  document.getElementById("longitude").addEventListener("input", updateMarkerFromInputs);
 
+  // Update input fields when marker is dragged
+  marker.on("dragend", function(e) {
+    const pos = marker.getLatLng();
+    document.getElementById("latitude").value = pos.lat.toFixed(4);
+    document.getElementById("longitude").value = pos.lng.toFixed(4);
+  });
+
+  // Use browser geolocation
   function getLocation() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(function(pos) {
@@ -177,12 +188,15 @@
         const lon = pos.coords.longitude.toFixed(4);
         document.getElementById("latitude").value = lat;
         document.getElementById("longitude").value = lon;
-        updateMarker();
+        marker.setLatLng([lat, lon]);
+        map.setView([lat, lon], 12);
       });
     } else {
       alert("Geolocation not supported by this browser.");
     }
   }
+
+
 
   // Toggle success fields visibility
   document.querySelectorAll("input[name='outcome']").forEach(radio => {
