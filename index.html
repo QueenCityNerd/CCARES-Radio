@@ -6,45 +6,49 @@
     <title>CCARES/WNY SET Test Page</title>
     <style>
         /* Typography and layout */
-        body {
+        body, html {
             font-family: "Calibri", "Candara", "Segoe", "Segoe UI", "Optima", Arial, sans-serif;
             font-size: 16px; 
             line-height: 1.4;
-            margin: 0; /* Removed margins to allow full width */
-            padding: 20px;
+            margin: 0; /* Critical: removes the default white border around the page */
+            padding: 0; /* Critical: removes internal spacing */
             background-color: #fcfcfc;
             color: #222;
+            height: 100vh;
+            width: 100vw;
             display: flex;
             flex-direction: column;
-            height: 100vh; /* Set body to full window height */
-            box-sizing: border-box;
+            overflow: hidden; /* Prevents scrollbars from appearing */
         }
 
         .header-text {
-            margin-bottom: 15px;
+            padding: 10px 20px; /* Gives the text a little breathing room from the edge */
             font-weight: bold;
-            flex-shrink: 0; /* Prevents text from squishing */
+            flex-shrink: 0;
+            background: #ffffff;
+            border-bottom: 1px solid #ccc;
         }
 
-        /* This wrapper expands to fill the remaining space */
+        /* This wrapper takes up every remaining pixel of the screen */
         .iframe-wrapper {
             flex-grow: 1; 
             width: 100%;
-            border: 1px solid #000;
-            overflow: hidden;
+            height: 100%;
         }
 
         .iframe-wrapper iframe {
             width: 100%;
             height: 100%;
             border: none;
+            display: block; /* Removes tiny bottom gap common in iframes */
         }
 
         .footer {
-            margin-top: 10px;
+            padding: 5px 20px;
             font-size: 0.85em;
             color: #666;
             flex-shrink: 0;
+            background: #f1f1f1;
         }
     </style>
 </head>
