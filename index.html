@@ -7,58 +7,57 @@
     <style>
         /* Typography and layout */
         body {
-            /* Primary font Calibri with fallbacks */
             font-family: "Calibri", "Candara", "Segoe", "Segoe UI", "Optima", Arial, sans-serif;
-            /* 12pt is equivalent to 16px in most browsers */
             font-size: 16px; 
-            line-height: 1.6;
-            margin: 40px;
+            line-height: 1.4;
+            margin: 0; /* Removed margins to allow full width */
+            padding: 20px;
             background-color: #fcfcfc;
             color: #222;
-        }
-
-        .dashboard-container {
-            max-width: 1000px;
-            margin: auto;
-            border: 1px solid #ddd;
-            padding: 25px;
-            background: white;
-            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh; /* Set body to full window height */
+            box-sizing: border-box;
         }
 
         .header-text {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             font-weight: bold;
+            flex-shrink: 0; /* Prevents text from squishing */
         }
 
+        /* This wrapper expands to fill the remaining space */
         .iframe-wrapper {
-            margin-top: 20px;
+            flex-grow: 1; 
+            width: 100%;
             border: 1px solid #000;
-            display: inline-block;
+            overflow: hidden;
+        }
+
+        .iframe-wrapper iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
         }
 
         .footer {
-            margin-top: 30px;
-            font-size: 0.9em;
+            margin-top: 10px;
+            font-size: 0.85em;
             color: #666;
-            border-top: 1px solid #eee;
-            padding-top: 10px;
+            flex-shrink: 0;
         }
     </style>
 </head>
 <body>
 
-<div class="dashboard-container">
     <div class="header-text">
         This is a test page for exploring CCARES/WNY SET outreach tools. <br>
         This is simulated SET data and will refresh every 15 minutes.
     </div>
 
     <div class="iframe-wrapper">
-        <iframe width="600" height="450" 
+        <iframe 
             src="https://datastudio.google.com/embed/reporting/b2fc0ad9-e514-48e5-a32c-6c4134b95986/page/TC2xF" 
-            frameborder="0" 
-            style="border:0" 
             allowfullscreen 
             sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox">
         </iframe>
@@ -67,7 +66,6 @@
     <div class="footer">
         Operational Test Build - Station: N2QFD
     </div>
-</div>
 
 </body>
 </html>
