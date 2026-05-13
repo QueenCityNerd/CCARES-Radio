@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CCARES/WNY SET Test Page</title>
+    <style>
+        /* Typography and layout */
+        body {
+            /* Primary font Calibri with fallbacks */
+            font-family: "Calibri", "Candara", "Segoe", "Segoe UI", "Optima", Arial, sans-serif;
+            /* 12pt is equivalent to 16px in most browsers */
+            font-size: 16px; 
+            line-height: 1.6;
+            margin: 40px;
+            background-color: #fcfcfc;
+            color: #222;
+        }
+
+        .dashboard-container {
+            max-width: 1000px;
+            margin: auto;
+            border: 1px solid #ddd;
+            padding: 25px;
+            background: white;
+            border-radius: 4px;
+        }
+
+        .header-text {
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .iframe-wrapper {
+            margin-top: 20px;
+            border: 1px solid #000;
+            display: inline-block;
+        }
+
+        .footer {
+            margin-top: 30px;
+            font-size: 0.9em;
+            color: #666;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard-container">
+    <div class="header-text">
+        This is a test page for exploring CCARES/WNY SET outreach tools. <br>
+        This is simulated SET data and will refresh every 15 minutes.
+    </div>
+
+    <div class="iframe-wrapper">
+        <iframe width="600" height="450" 
+            src="https://datastudio.google.com/embed/reporting/b2fc0ad9-e514-48e5-a32c-6c4134b95986/page/TC2xF" 
+            frameborder="0" 
+            style="border:0" 
+            allowfullscreen 
+            sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox">
+        </iframe>
+    </div>
+
+    <div class="footer">
+        Operational Test Build - Station: N2QFD
+    </div>
+</div>
+
+</body>
+</html>
