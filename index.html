@@ -61,6 +61,7 @@
 
     <div class="iframe-wrapper">
         <iframe 
+            id="looker-dashboard"
             src="https://datastudio.google.com/embed/reporting/b2fc0ad9-e514-48e5-a32c-6c4134b95986/page/TC2xF" 
             allowfullscreen 
             sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox">
@@ -70,6 +71,28 @@
     <div class="footer">
         Operational Test Build - Station: N2QFD
     </div>
+
+    <!-- JavaScript to bypass Looker Studio caching and refresh data smoothly -->
+    <script>
+        // Set the refresh interval (15 minutes)
+        const REFRESH_INTERVAL_MINUTES = 15; 
+
+        function refreshDashboard() {
+            const iframe = document.getElementById('looker-dashboard');
+            const baseSrc = "https://datastudio.google.com/embed/reporting/b2fc0ad9-e514-48e5-a32c-6c4134b95986/page/TC2xF";
+            
+            // Create a unique timestamp (milliseconds since 1970)
+            const cacheBuster = new Date().getTime();
+            
+            // Re-load the iframe source with the cache buster appended as a URL parameter
+            iframe.src = baseSrc + "?nocache=" + cacheBuster;
+            
+            console.log("Dashboard cache busted and reloaded at: " + new Date().toLocaleTimeString());
+        }
+
+        // Initialize the interval timer (minutes * 60 seconds * 1000 milliseconds)
+        setInterval(refreshDashboard, REFRESH_INTERVAL_MINUTES * 60 * 1000);
+    </script>
 
 </body>
 </html>
